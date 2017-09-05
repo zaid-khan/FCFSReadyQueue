@@ -20,6 +20,7 @@ COMPATIBLE COMPILER: GCC 4.9.2.
 const int BURSTRANGE = 3;
 const int ARRIVALRANGE = 4;
 const int NOFBURST = 2;
+const int NOOFPROCESSES = 4;
 static int waitingTime = 0;
 /*This structure is for each individual bursts. Each burst consists of its time, it's start time,
  it's end time(both have default values of -1 assigned to them in the program below) and the 
@@ -65,7 +66,7 @@ Process *running = NULL;
 /*Method Declaration*/
 Burst * CreateBursts(Process *);
 void ManageBlockQueue(int);
-void AddToBlockQueue(Process *, int);
+Process * RemoveFromBlockQueue(Process *);
 void ManageReadyQueue(int);
 void ManageRunning(int);
 void PrintBlockQueue();
@@ -197,7 +198,7 @@ Process * CreateElements()
 	P = firstProcess; 
 
 	//Since we have already created the first process i is from 2 to n.(here in this case, 3)
-	for (int i = 2; i <= 3; i++) 
+	for (int i = 2; i <= NOOFPROCESSES; i++) 
 	{
 		
 		P->next = (Process *)malloc(sizeof(Process));
@@ -288,6 +289,28 @@ void AddToBlockQueue(Process *temp, int counter)
 }
 
 
+//------------------------------------------------------------------------------------------------
+Process * RemoveFromBlockQueue(Process *toreturn)
+{
+	
+	if (blockQueue == toreturn) //That the process is the first process in the block queue.
+	{
+		blockQueue = toreturn->next; //2nd process or NULL is there is only 1 process in the blockQueue.
+	}
+	else
+	{
+		Process *temp = blockQueue, *tempahead = blockQueue->next;
+		while (tempahead != toreturn)
+		{
+			tempahead = tempahead->next;
+			temp = temp->next;
+		}
+		temp->next = tempahead->next;
+	}
+	return toreturn;
+}
+
+
 
 
 //------------------------------------------------------------------------------------------------
@@ -354,11 +377,11 @@ void ManageBlockQueue(int counter)
 						//**Remember we're removing processes from list we're traversing**
 						para = temp->next;
 						if (t->next == NULL)
-							TransferToCompletedQueue(temp, counter);
+							TransferToCompletedQueue(RemoveFromBlockQueue(temp), counter);
 						
 						else
 						{
-							TransferToReadyQueue(temp, counter);
+							TransferToReadyQueue(RemoveFromBlockQueue(temp), counter);
 							/*I have disabled direct transition from blocked to running instead I'll add
 						    to the ready queue for that second(counter) and if the CPU is free at that second/coun.
 							it will get transitioned from there in ManageReadyQueue() */
@@ -374,7 +397,7 @@ void ManageBlockQueue(int counter)
 					t = NULL; //IF the next burst is NULL then the burst after the next burst will be NULL too
 			}
 			if (tomove)
-				blockQueue = temp = para; //Next process
+				temp = para; //Next process
 			else
 				temp = temp->next; //The Normal Next Process
 				
